@@ -94,7 +94,7 @@ with st.sidebar:
     st.title("⚡ InspectorML Pro")
     selected_page = option_menu(
         menu_title=None,
-        options=["Upload & Clean", "EDA & Outliers", "Model Training", "Evaluation", "🏆 Auto-Governance", "🔮 Risk & Simulation Lab", "AI Consultant"],
+        options=["Upload & Clean", "EDA & Outliers", "Model Training", "Evaluation", "Auto-Governance", "Risk & Simulation Lab", "AI Consultant"],
         icons=["cloud-upload", "bar-chart-line", "cpu", "check-circle", "trophy", "virus", "robot"],
         default_index=0,
     )
