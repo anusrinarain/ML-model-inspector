@@ -26,18 +26,13 @@ from sklearn.svm import SVR, SVC
 from sklearn.neural_network import MLPRegressor, MLPClassifier
 
 import google.generativeai as genai
-
-# =========================================================
-# 1. CONFIG & STYLING 
-# =========================================================
+#1. CONFIG & STYLING 
 st.set_page_config(
     page_title="InspectorML Pro",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-# Professional Dark Theme Styling
 st.markdown("""
 <style>
     div[data-testid="stMetric"] {
@@ -52,10 +47,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 pio.templates.default = "plotly_dark"
-
-# =========================================================
-# 2. LLM HELPER (PROFESSIONAL PERSONA RESTORED)
-# =========================================================
+# 2. LLM 
 @st.cache_resource
 def get_gemini_response(user_query, context):
     api_key = None
@@ -67,8 +59,6 @@ def get_gemini_response(user_query, context):
 
     try:
         genai.configure(api_key=api_key)
-        
-        # Dynamic Model Selection (Smart Connect)
         valid_model = "gemini-1.5-flash"
         try:
             for m in genai.list_models():
@@ -79,8 +69,6 @@ def get_gemini_response(user_query, context):
         except: pass
 
         model = genai.GenerativeModel(valid_model)
-        
-        # THE PROFESSIONAL PROMPT YOU LIKED
         full_prompt = f"""
         ROLE: Act as a Senior Data Scientist and Machine Learning Engineer.
         TASK: Evaluate the following context and answer the user's question in detail.
@@ -101,10 +89,7 @@ def get_gemini_response(user_query, context):
         return response.text
     except Exception as e:
         return f"🤖 AI Service Error: {str(e)}"
-
-# =========================================================
-# 3. SIDEBAR & SESSION STATE
-# =========================================================
+# 3. SIDEBA
 with st.sidebar:
     st.title("⚡ InspectorML Pro")
     selected_page = option_menu(
@@ -123,9 +108,7 @@ if uploaded_file:
     if st.session_state.df_cleaned is None:
         st.session_state.df_cleaned = pd.read_csv(uploaded_file)
 
-# =========================================================
 # PAGE 1: UPLOAD & CLEAN
-# =========================================================
 if selected_page == "Upload & Clean":
     st.header("Data Setup Center")
     if st.session_state.df_cleaned is not None:
@@ -159,9 +142,8 @@ if selected_page == "Upload & Clean":
     else:
         st.info("Please upload a CSV file.")
 
-# =========================================================
-# PAGE 2: EDA (FEATURE IMPORTANCE & CLEAN OUTLIERS)
-# =========================================================
+
+# PAGE 2: EDA 
 if selected_page == "EDA & Outliers":
     st.header("Exploratory Analysis")
     df = st.session_state.df_cleaned
@@ -175,8 +157,6 @@ if selected_page == "EDA & Outliers":
         
         st.markdown("---")
         st.subheader("Feature Importance")
-        
-        # Logic to show importance even if model not trained (Correlation fallback)
         if st.session_state.model is not None:
             model = st.session_state.model
             if hasattr(model, "feature_importances_"):
@@ -187,8 +167,6 @@ if selected_page == "EDA & Outliers":
                 st.plotly_chart(px.bar(imp, x="Importance", y="Feature", orientation='h', title="Model Coefficients", color="Importance"), use_container_width=True)
             else:
                 st.info("Selected model does not provide feature importance. (Showing Correlation below instead)")
-        
-        # Fallback / Always Show: Correlation with Target
         if st.session_state.get("target_name") in df.columns:
             target = st.session_state.target_name
             num_df = df.select_dtypes(include=np.number)
@@ -202,22 +180,17 @@ if selected_page == "EDA & Outliers":
             st.plotly_chart(px.imshow(num_df.corr(), text_auto=True, color_continuous_scale='RdBu_r', title="Correlation Heatmap"), use_container_width=True)
 
     with tab3:
-        # FIXED: Clean Layout for Outliers
         st.subheader("Outlier Inspector")
         num_cols = df.select_dtypes(include=np.number).columns
         col_out = st.selectbox("Select Column to Inspect", num_cols)
-        
-        # Tabs for different views so it doesn't look squeezed
-        v1, v2 = st.tabs(["📦 Box Plot View", "📉 Scatter View"])
+        v1, v2 = st.tabs(["Box Plot View", "Scatter View"])
         
         with v1:
             st.plotly_chart(px.box(df, y=col_out, points="all", title=f"Box Plot: {col_out}", color_discrete_sequence=['#FF4B4B']), use_container_width=True)
         with v2:
             st.plotly_chart(px.scatter(df, y=col_out, title=f"Scatter Distribution: {col_out}", color_discrete_sequence=['#636EFA']), use_container_width=True)
 
-# =========================================================
-# PAGE 3: TRAINING (TARGET TYPE HELPER & BALLOONS)
-# =========================================================
+# PAGE 3: TRAINING 
 if selected_page == "Model Training":
     st.header("Model Training")
     df = st.session_state.df_cleaned.copy()
@@ -227,7 +200,7 @@ if selected_page == "Model Training":
     
     target_col = st.sidebar.selectbox("Select Target Variable", df.columns)
     
-    # FEATURE: Display Target Type Helper
+    
     target_type = df[target_col].dtype
     st.sidebar.info(f"Target Type: **{target_type}**")
     if pd.api.types.is_numeric_dtype(target_type) and df[target_col].nunique() > 10:
@@ -253,7 +226,7 @@ if selected_page == "Model Training":
     c2.info(f"**Type:** {problem_type}")
     c3.info(f"**Model:** {model_name}")
 
-    if st.button("🚀 Train Model", type="primary"):
+    if st.button("Train Model", type="primary"):
         with st.spinner("Training in progress..."):
             X = pd.get_dummies(df.drop(columns=[target_col]), drop_first=True)
             y = df[target_col]
@@ -298,11 +271,10 @@ if selected_page == "Model Training":
             st.session_state.target_name = target_col
             
             st.success(f"Training Complete! Score: {score:.4f}")
-            st.balloons() # RESTORED
+            st.balloons() 
 
-# =========================================================
-# PAGE 4: EVALUATION (ALL METRICS & GRAPHS RESTORED)
-# =========================================================
+
+# PAGE 4: EVALUATION 
 if selected_page == "Evaluation":
     if st.session_state.model is None: st.warning("Train first."); st.stop()
     st.header("Performance Dashboard")
@@ -346,17 +318,16 @@ if selected_page == "Evaluation":
             residuals = y_test - y_pred
             st.plotly_chart(px.histogram(residuals, nbins=30, title="Residual Error Distribution", color_discrete_sequence=['#FF4B4B']), use_container_width=True)
 
-# =========================================================
+
 # PAGE 5: AUTO-GOVERNANCE
-# =========================================================
-if selected_page == "🏆 Auto-Governance":
-    st.header("🏆 Automated Model Tournament")
+if selected_page == "Auto-Governance":
+    st.header("Automated Model Tournament")
     if st.session_state.df_cleaned is None: st.stop()
     
     target = st.selectbox("Target", st.session_state.df_cleaned.columns)
     prob_type = st.radio("Type", ["Classification", "Regression"])
     
-    if st.button("🚀 Run Tournament"):
+    if st.button("Run Tournament"):
         with st.spinner("Running Tournament..."):
             try:
                 X = pd.get_dummies(st.session_state.df_cleaned.drop(columns=[target]), drop_first=True)
@@ -387,7 +358,7 @@ if selected_page == "🏆 Auto-Governance":
     if "gov_results" in st.session_state:
         st.dataframe(st.session_state.gov_results.style.highlight_max(subset="Score", color="#00CC96"), use_container_width=True)
         
-        if st.button("💾 Activate Best Model"):
+        if st.button("Activate Best Model"):
             st.session_state.model = st.session_state.best_gov_model
             # Re-fit
             X = pd.get_dummies(st.session_state.df_cleaned.drop(columns=[target]), drop_first=True)
@@ -396,18 +367,15 @@ if selected_page == "🏆 Auto-Governance":
             st.session_state.model.fit(StandardScaler().fit_transform(X), y)
             st.success(f"Activated {st.session_state.gov_results.iloc[0]['Model']}!")
 
-# =========================================================
-# PAGE 6: SIMULATION (FIXED BUTTONS & GEMINI)
-# =========================================================
-if selected_page == "🔮 Risk & Simulation Lab":
-    st.header("🔮 Simulation Lab")
+
+# PAGE 6: SIMULATION 
+if selected_page == "Risk & Simulation Lab":
+    st.header("Simulation Lab")
     if st.session_state.model is None: st.warning("Train first."); st.stop()
     
     df = st.session_state.df_cleaned
     target = st.session_state.target_name
     X_str = df.drop(columns=[target])
-    
-    # 1. FIXED BUTTONS
     c1, c2 = st.columns(2)
     if c1.button("🛡️ Force Safe Values"):
         st.session_state.force_safe = True
@@ -426,8 +394,6 @@ if selected_page == "🔮 Risk & Simulation Lab":
             if pd.api.types.is_numeric_dtype(X_str[col]):
                 mn, mx = float(X_str[col].min()), float(X_str[col].max())
                 avg = float(X_str[col].mean())
-                
-                # Logic to determine default value based on buttons
                 val = avg
                 if st.session_state.get("force_safe"): val = avg
                 if st.session_state.get("force_risk"): val = mx if i % 2 == 0 else mn # Chaos
@@ -463,14 +429,13 @@ if selected_page == "🔮 Risk & Simulation Lab":
         else: st.success("✅ LOW RISK / SAFE")
         
         # GEMINI EXPLANATION BUTTON
-        if st.button("🤖 Ask AI to Explain This Result"):
+        if st.button("Ask AI to Explain This Result"):
             with st.spinner("AI Analyzing..."):
                 prompt = f"The model predicted {pred} with {prob:.1%} probability for inputs: {inputs}. Explain why."
                 st.write(get_gemini_response(prompt, "Simulation Context"))
 
-# =========================================================
-# PAGE 7: AI CONSULTANT
-# =========================================================
+
+# PAGE 7: AI CONSULTANt
 if selected_page == "AI Consultant":
     st.header("AI Assistant")
     
